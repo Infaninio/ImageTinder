@@ -8,6 +8,7 @@ from pillow_heif import register_heif_opener
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QApplication,
+    QFileDialog,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -60,7 +61,14 @@ class ImageViewer(QMainWindow):
 
         self.image_files: [Path] = []
         self.currentImage: Path = ""
-        self.load_images(Path("C:/Users/mengel/Pictures/NewYork/Bilder"))
+
+        file_name = Path(
+            QFileDialog.getExistingDirectory(
+                self, "Choose your directory for the images"
+            )
+        )
+
+        self.load_images(file_name)
 
     def load_images(self, dir_path: Path):
         """Load the image files of the specified path.

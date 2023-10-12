@@ -1,5 +1,5 @@
 # ImageTinder
-Tool to sort Images
+Quick and dirty tool to sort Images
 
 ImageTinder can be used to sort a huge amout of images into two different groups (Keep and Trash).
 
@@ -14,3 +14,5 @@ If you reject the image it will be moved to a different directory. ('Trash' Fold
     - skip video frames
 - File dialog
 - Keyboard control
+- Make Buttons bigger and with colors.
+- Handle out of images properly
