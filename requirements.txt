@@ -1,3 +1,4 @@
 PySide6
 pillow
 pillow-heif
+pre-commit
