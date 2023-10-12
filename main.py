@@ -1,5 +1,5 @@
 
-from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QApplication, QHBoxLayout, QMainWindow, QVBoxLayout, QSizePolicy
+from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QApplication, QHBoxLayout, QMainWindow, QVBoxLayout, QScrollArea, QSizePolicy
 from PySide6.QtCore import QBasicTimer
 from PySide6.QtGui import QPixmap
 
@@ -7,6 +7,9 @@ from pillow_heif import register_heif_opener
 from PIL import Image
 from PIL.ImageQt import ImageQt
 
+import shutil
+from pathlib import Path
+import glob
 
 class Slides(QMainWindow):
     def __init__(self, image_files, parent=None):
@@ -14,53 +17,71 @@ class Slides(QMainWindow):
         QMainWindow.__init__(self, parent)
         self.image_files = image_files
         main_layout = QHBoxLayout()
-        main_layout.setStretch(1,3)
 
         self.button_reject = QPushButton("Image to Trash", self)
+        self.button_reject.clicked.connect(self.trash_button)
         main_layout.addWidget(self.button_reject)
-        upper_layout = QVBoxLayout()
-        upper_layout.setStretch(1,2)
+        general_layout = QVBoxLayout()
+        general_layout.addStretch()
 
+        self.scroll = QScrollArea(self)
         s = '<>'*10
         self.label = QLabel(s, self)
-        main_layout.addWidget(self.label)
+        self.label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
+        self.scroll.setWidget(self.label)
+        main_layout.addWidget(self.scroll)
 
         self.button_use = QPushButton("Image to images", self)
+        self.button_use.clicked.connect(self.good_button)
         main_layout.addWidget(self.button_use)
 
-        self.button = QPushButton("Start Slide Show",self)
-        # self.button.setGeometry(10, 10, 140, 30)
-        self.button.clicked.connect(self.timerEvent)
-
-        self.timer = QBasicTimer()
-        self.step = 0
-        self.delay = 5000  # milliseconds
+        self.button = QPushButton("Useless Button",self)
+        upper_layout = QHBoxLayout()
+        upper_layout.addWidget(self.button)
 
         widget = QWidget()
-        upper_layout.addWidget(self.button)
-        upper_layout.addLayout(main_layout)
-        widget.setLayout(upper_layout) 
+        general_layout.addLayout(upper_layout)
+        general_layout.addLayout(main_layout,1)
+        general_layout.addStretch()
+        widget.setLayout(general_layout) 
         self.setCentralWidget(widget)
-        sf = "Slides are shown {} seconds apart"
-        self.setWindowTitle(sf.format(self.delay/1000.0))
+        self.show()
+        self.setWindowTitle("Show vacation images")
 
-    def timerEvent(self, e=None):
-        if self.step >= len(self.image_files):
-            self.timer.stop()
-            self.button.setText('Slide Show Finished')
-            return
-        self.timer.start(self.delay, self)
-        file = self.image_files[self.step]
-        pil_image = Image.open(file)
+        self.image_files: [Path] = []
+        self.currentImage: Path = ""
+        self.load_images(Path("C:/Users/mengel/Pictures/NewYork/Bilder"))
+        self.set_new_Image()
 
-        factor = min(1, self.label.size().width() / pil_image.width, self.label.size().height() / pil_image.height)
+    def load_images(self, dir_path: Path):
+        self.image_files.clear()
+        types = ["*.png", "*.heic", "*.jpg", "*.jpeg"]
+        for type in types:
+            self.image_files.extend(glob.glob(str(dir_path) + "\\" + type))
+
+        self.image_files = [Path(file) for file in self.image_files if "_checked" not in file]
+
+
+    def set_new_Image(self) -> None:
+
+        self.currentImage = self.image_files.pop()
+        pil_image = Image.open(self.currentImage)
+
+        factor = min(1, self.scroll.viewport().size().width() / pil_image.width, self.scroll.viewport().size().height() / pil_image.height)
         pil_image = pil_image.resize((int(pil_image.width * factor), int(pil_image.height * factor)))
-
+        self.label.resize(self.scroll.viewport().size())
         image = QPixmap.fromImage(ImageQt(pil_image))
         self.label.setPixmap(image)
-        self.setWindowTitle("{} --> {}".format(str(self.step), file))
-        self.step += 1
+        self.setWindowTitle(f"City:  Image: {self.currentImage}")
 
+    def trash_button(self) -> None:
+        shutil.move(self.currentImage, Path(self.currentImage.parent.parent, "Trash", self.currentImage.name))
+        self.set_new_Image()
+
+    def good_button(self) -> None:
+        new_name = self.currentImage.stem + "_checked"
+        shutil.move(self.currentImage, self.currentImage.with_stem(new_name))
+        self.set_new_Image()
 
 # pick image files you have in the working folder
 # or give full path name
