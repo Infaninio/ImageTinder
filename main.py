@@ -5,7 +5,8 @@ from pathlib import Path
 from PIL import Image
 from PIL.ImageQt import ImageQt
 from pillow_heif import register_heif_opener
-from PySide6.QtGui import QPixmap
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QKeyEvent, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -31,6 +32,10 @@ class ImageViewer(QMainWindow):
 
         self.button_reject = QPushButton("Image to Trash", self)
         self.button_reject.clicked.connect(self.trash_button)
+        self.button_reject.setSizePolicy(
+            QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding
+        )
+        self.button_reject.setStyleSheet("background-color: #A44A3F")
         main_layout.addWidget(self.button_reject)
         general_layout = QVBoxLayout()
         general_layout.addStretch()
@@ -44,6 +49,10 @@ class ImageViewer(QMainWindow):
 
         self.button_use = QPushButton("Image to images", self)
         self.button_use.clicked.connect(self.good_button)
+        self.button_use.setSizePolicy(
+            QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding
+        )
+        self.button_use.setStyleSheet("background-color: #82D943")
         main_layout.addWidget(self.button_use)
 
         self.button = QPushButton("Useless Button", self)
@@ -69,6 +78,18 @@ class ImageViewer(QMainWindow):
         )
 
         self.load_images(file_name)
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        key = event.key()
+        if key == Qt.Key.Key_A:
+            self.trash_button()
+            event.accept()
+            return
+        if key == Qt.Key.Key_D:
+            self.good_button()
+            event.accept()
+            return
+        return super().keyPressEvent(event)
 
     def load_images(self, dir_path: Path):
         """Load the image files of the specified path.
@@ -104,6 +125,7 @@ class ImageViewer(QMainWindow):
         image = QPixmap.fromImage(ImageQt(pil_image))
         self.label.setPixmap(image)
         self.setWindowTitle(f"City:  Image: {self.currentImage}")
+        # self.button_use.setFixedHeight(self.scroll.viewport().size().height())
 
     def trash_button(self) -> None:
         """Move the image to the trash folder."""
