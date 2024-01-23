@@ -6,7 +6,7 @@ from PIL import Image
 from PIL.ImageQt import ImageQt
 from pillow_heif import register_heif_opener
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QKeyEvent, QPixmap
+from PySide6.QtGui import QKeyEvent, QPixmap, QAction
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+import json
 
 
 class ImageViewer(QMainWindow):
@@ -26,6 +27,7 @@ class ImageViewer(QMainWindow):
 
     def __init__(self, parent=None):
         """Create the image viewer."""
+        self.available_images = {}
         register_heif_opener()
         QMainWindow.__init__(self, parent)
         main_layout = QHBoxLayout()
@@ -46,7 +48,6 @@ class ImageViewer(QMainWindow):
         self.label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
         self.scroll.setWidget(self.label)
         main_layout.addWidget(self.scroll)
-
         self.button_use = QPushButton("Image to images", self)
         self.button_use.clicked.connect(self.good_button)
         self.button_use.setSizePolicy(
@@ -55,12 +56,8 @@ class ImageViewer(QMainWindow):
         self.button_use.setStyleSheet("background-color: #82D943")
         main_layout.addWidget(self.button_use)
 
-        self.button = QPushButton("Useless Button", self)
-        upper_layout = QHBoxLayout()
-        upper_layout.addWidget(self.button)
 
         widget = QWidget()
-        general_layout.addLayout(upper_layout)
         general_layout.addLayout(main_layout, 1)
         general_layout.addStretch()
         widget.setLayout(general_layout)
@@ -71,6 +68,9 @@ class ImageViewer(QMainWindow):
         self.image_files: [Path] = []
         self.currentImage: Path = ""
 
+        self.create_menu_bar()
+
+    def open_image_dialog(self):
         file_name = Path(
             QFileDialog.getExistingDirectory(
                 self, "Choose your directory for the images"
@@ -78,6 +78,16 @@ class ImageViewer(QMainWindow):
         )
 
         self.load_images(file_name)
+
+    def create_menu_bar(self):
+        menu_bar = self.menuBar()
+        # File menu
+        file_menu = menu_bar.addMenu("File")
+
+        # Open action
+        open_action = QAction("Open Folder", self)
+        open_action.triggered.connect(self.open_image_dialog)
+        file_menu.addAction(open_action)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
         key = event.key()
@@ -99,14 +109,21 @@ class ImageViewer(QMainWindow):
         dir_path : Path
             Path to the image directory.
         """
-        self.image_files.clear()
+        image_files = []
+        self.dir_path = Path(dir_path)
         types = ["*.png", "*.heic", "*.jpg", "*.jpeg"]
         for type in types:
-            self.image_files.extend(glob.glob(str(dir_path) + "\\" + type))
+            image_files.extend(self.dir_path.rglob(type))
+        
+        for image in image_files:
+            self.available_images[Path(image).relative_to(Path(dir_path))] = {"is_nice": None}
 
-        self.image_files = [
-            Path(file) for file in self.image_files if "_checked" not in file
-        ]
+        
+        self.store_progress()
+
+    def store_progress(self):
+        with open(Path(self.dir_path, "ImageTinderProgress.itp"), 'w+') as fp:
+            json.dump(self.available_images, fp)
 
     def set_new_Image(self) -> None:
         """Set a new Image to the UI."""
@@ -125,7 +142,6 @@ class ImageViewer(QMainWindow):
         image = QPixmap.fromImage(ImageQt(pil_image))
         self.label.setPixmap(image)
         self.setWindowTitle(f"City:  Image: {self.currentImage}")
-        # self.button_use.setFixedHeight(self.scroll.viewport().size().height())
 
     def trash_button(self) -> None:
         """Move the image to the trash folder."""
@@ -147,5 +163,4 @@ if __name__ == "__main__":
     w = ImageViewer()
     w.setGeometry(100, 100, 700, 500)
     w.show()
-    w.set_new_Image()
     app.exec()
