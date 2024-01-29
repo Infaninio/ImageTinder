@@ -3,3 +3,4 @@ pillow
 pillow-heif
 pre-commit
 pyheif
+pre-commit
