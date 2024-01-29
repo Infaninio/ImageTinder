@@ -1,8 +1,7 @@
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QDateEdit, QDialogButtonBox
 from PySide6.QtCore import QDate
-import os
-from PIL import Image
 from datetime import datetime
+from typing import Tuple
 
 class CustomDateRangeDialog(QDialog):
     
@@ -33,13 +32,14 @@ class CustomDateRangeDialog(QDialog):
 
         self.setLayout(layout)
 
-    def get_date_range(self):
-        start_date = self.start_date_edit.date()
-        end_date = self.end_date_edit.date()
-        return start_date, end_date
+    def get_date_range(self) -> Tuple[datetime, datetime]:
+        start_date = self.start_date_edit.date().toPython()
+        end_date = self.end_date_edit.date().toPython()
+
+        return datetime.combine(start_date, datetime.min.time()), datetime.combine(end_date, datetime.max.time())
     
     @staticmethod
-    def get_data_range_dialog(start_date, end_date, parent=None):
+    def get_data_range_dialog(start_date, end_date, parent=None) -> Tuple[datetime, datetime]:
         dialog = CustomDateRangeDialog(start_date=start_date, end_date=end_date, parent=parent)
         result = dialog.exec_()
 
@@ -47,23 +47,3 @@ class CustomDateRangeDialog(QDialog):
             return dialog.get_date_range()
         
         return None
-
-
-def get_image_creation_date(file_path):
-
-    with Image.open(file_path) as img:
-        # Get the creation timestamp from the image's Exif data
-        try:
-            exif_info = img._getexif()
-            if exif_info and 36867 in exif_info:
-                creation_timestamp = exif_info[36867]
-            else:
-                creation_timestamp = None
-        except:
-            creation_timestamp = None
-
-    if creation_timestamp:
-        creation_date = datetime.strptime(creation_timestamp, "%Y:%m:%d %H:%M:%S")
-    else:
-        creation_date = datetime.fromtimestamp(os.path.getmtime(file_path))
-    return QDate(creation_date)

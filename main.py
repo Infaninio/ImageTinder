@@ -4,7 +4,7 @@ from pathlib import Path
 from PIL import Image
 from PIL.ImageQt import ImageQt
 from pillow_heif import register_heif_opener
-from PySide6.QtCore import Qt, QDate
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeyEvent, QPixmap, QAction
 from PySide6.QtWidgets import (
     QApplication,
@@ -18,12 +18,13 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
     QInputDialog,
+    QProgressDialog,
 )
-import json
+import os
 from typing import Optional
-from DateRangeDialog import CustomDateRangeDialog, get_image_creation_date
-import tqdm
-
+from DateRangeDialog import CustomDateRangeDialog
+from datetime import datetime
+from image_selector import ImageSelector
 
 class ImageViewer(QMainWindow):
     """Simple Image viewr to decide wether to keep a photo or not."""
@@ -71,17 +72,24 @@ class ImageViewer(QMainWindow):
 
         self.image_files: [Path] = []
         self.currentImage: Path = ""
-
         self.create_menu_bar()
+        self.selector = ImageSelector()
 
     def open_image_dialog(self):
-        file_name = Path(
+        base_dir = Path(
             QFileDialog.getExistingDirectory(
                 self, "Choose your directory for the images"
             )
         )
 
-        self.load_images(file_name)
+        progress = QProgressDialog("Analysing files...", "Abort", 0, 1, self)
+        progress.setWindowModality(Qt.WindowModality.WindowModal)
+        self.selector.load_images(base_dir, progress.setMaximum, progress.setValue, progress.wasCanceled)
+        date_range = CustomDateRangeDialog.get_data_range_dialog(self.selector.base_date_range[0], self.selector.base_date_range[1], self)
+
+        self.filter_available_images(date_range[0], date_range[1])
+        self.selector.store_progress(Path(__file__).with_name("tmp.itsf"))
+
         self.user_name = QInputDialog.getText(self, "Enter name", "Please enter your name:")
         pass
 
@@ -106,53 +114,12 @@ class ImageViewer(QMainWindow):
             event.accept()
             return
         return super().keyPressEvent(event)
-    
-    def check_for_existing_config(self) -> bool:
-        for file in self.dir_path.glob("*.itp"):
-            with open(file) as fp:
-                self.available_images = json.load(fp)
-        
-        if len(self.available_images) == 0:
-            return False
-        return True
 
-
-    def load_images(self, dir_path: Path):
-        """Load the image files of the specified path.
-
-        Parameters
-        ----------
-        dir_path : Path
-            Path to the image directory.
-        """
-        image_files = []
-        self.dir_path = Path(dir_path)
-        self.available_images = {}
-        if self.check_for_existing_config():
-            return
-        types = ["*.png", "*.heic", "*.jpg", "*.jpeg", "*.HEIC"]
-        for type in types:
-            image_files.extend(self.dir_path.rglob(type))
-        
-        max_date = QDate(2000, 1, 1)
-        min_date = QDate.currentDate()
-        for image in tqdm.tqdm(image_files):
-            cur_date = get_image_creation_date(image)
-            if cur_date < min_date:
-                min_date = cur_date
-            if cur_date > max_date:
-                max_date = cur_date
-            self.available_images[str(Path(image).relative_to(Path(dir_path)).absolute())] = {"date": cur_date.toString()}
-       
-        date_range = CustomDateRangeDialog.get_data_range_dialog(min_date, max_date, self)
-
-        # TODO Implement filter for date range and write to config.
-
-        self.store_progress()
-
-    def store_progress(self):
-        with open(str(Path(self.dir_path, "ImageTinderProgress.itp")), 'w+') as fp:
-            json.dump(self.available_images, fp)
+    def filter_available_images(self, start_date: datetime, end_date: datetime):
+        for key, value in self.available_images.items():
+            check_date = datetime.fromisoformat(value["date"])
+            if start_date <= check_date <= end_date:
+                self.available_images.pop(key)
 
     def set_new_Image(self) -> None:
         """Set a new Image to the UI."""
