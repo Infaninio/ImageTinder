@@ -1,30 +1,31 @@
 import shutil
+from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 from PIL import Image
 from PIL.ImageQt import ImageQt
 from pillow_heif import register_heif_opener
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QKeyEvent, QPixmap, QAction
+from PySide6.QtGui import QAction, QKeyEvent, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QMainWindow,
+    QProgressDialog,
     QPushButton,
     QScrollArea,
     QSizePolicy,
     QVBoxLayout,
     QWidget,
-    QInputDialog,
-    QProgressDialog,
 )
-import os
-from typing import Optional
+
 from DateRangeDialog import CustomDateRangeDialog
-from datetime import datetime
 from image_selector import ImageSelector
+
 
 class ImageViewer(QMainWindow):
     """Simple Image viewr to decide wether to keep a photo or not."""
@@ -61,7 +62,6 @@ class ImageViewer(QMainWindow):
         self.button_use.setStyleSheet("background-color: #82D943")
         main_layout.addWidget(self.button_use)
 
-
         widget = QWidget()
         general_layout.addLayout(main_layout, 1)
         general_layout.addStretch()
@@ -84,13 +84,37 @@ class ImageViewer(QMainWindow):
 
         progress = QProgressDialog("Analysing files...", "Abort", 0, 1, self)
         progress.setWindowModality(Qt.WindowModality.WindowModal)
-        self.selector.load_images(base_dir, progress.setMaximum, progress.setValue, progress.wasCanceled)
-        date_range = CustomDateRangeDialog.get_data_range_dialog(self.selector.base_date_range[0], self.selector.base_date_range[1], self)
+        self.selector.load_images(
+            base_dir, progress.setMaximum, progress.setValue, progress.wasCanceled
+        )
+        date_range = CustomDateRangeDialog.get_data_range_dialog(
+            self.selector.base_date_range[0], self.selector.base_date_range[1], self
+        )
 
         self.filter_available_images(date_range[0], date_range[1])
         self.selector.store_progress(Path(__file__).with_name("tmp.itsf"))
 
-        self.user_name = QInputDialog.getText(self, "Enter name", "Please enter your name:")
+        self.user_name = QInputDialog.getText(
+            self, "Enter name", "Please enter your name:"
+        )
+        self.selector.user = self.user_name
+        pass
+
+    def load_configuration(self):
+
+        config_file = QFileDialog.getOpenFileName(
+            self, "Choose your directory for the images", filter="*.itsf"
+        )
+        if not config_file[0]:
+            return
+        self.selector.load_configuration(Path(config_file[0]))
+
+        self.user_name = QInputDialog.getText(
+            self, "Enter name", "Please enter your name:"
+        )
+        self.selector.user = self.user_name
+
+    def save_configuration(self):
         pass
 
     def create_menu_bar(self):
@@ -98,10 +122,20 @@ class ImageViewer(QMainWindow):
         # File menu
         file_menu = menu_bar.addMenu("File")
 
-        # Open action
-        open_action = QAction("Open Folder", self)
+        # Create action
+        open_action = QAction("Create new Configuration", self)
         open_action.triggered.connect(self.open_image_dialog)
         file_menu.addAction(open_action)
+
+        # load configuration
+        load_action = QAction("Load a Configuration", self)
+        load_action.triggered.connect(self.load_configuration)
+        file_menu.addAction(load_action)
+
+        # Save configuration
+        save_action = QAction("Save current Configuration", self)
+        save_action.triggered.connect(self.save_configuration)
+        file_menu.addAction(save_action)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
         key = event.key()
