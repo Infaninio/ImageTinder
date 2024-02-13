@@ -56,7 +56,7 @@ class SelectorImage:
 
     def to_json(self, base_path: Optional[Path] = None) -> Dict[str, Any]:
         path = (
-            self._path.relative_to(base_path).as_posix()
+            self._path.relative_to(base_path.parent).as_posix()
             if base_path
             else self._path.as_posix()
         )
@@ -93,7 +93,6 @@ class ImageSelector:
 
     def __init__(self):
         """Set up Image Selector."""
-        self._base_dir = None
         self._filtered_images: Dict[Path, SelectorImage] = {}
         self._base_date_range: Tuple[datetime, datetime] = ()
         self._filterd_date_range: Tuple[datetime, datetime] = ()
@@ -120,11 +119,10 @@ class ImageSelector:
             Function to check if the user aboarted on the ui, by default None
         """
         image_files = []
-        self._base_dir = Path(dir_path)
         self._filtered_images = {}
         types = ["*.png", "*.heic", "*.jpg", "*.jpeg", "*.HEIC"]
         for type in types:
-            image_files.extend(self._base_dir.rglob(type))
+            image_files.extend(dir_path.rglob(type))
 
         if max_setter:
             max_setter(len(image_files))
@@ -141,41 +139,51 @@ class ImageSelector:
                 value_setter(i)
             if get_progress_state and get_progress_state():
                 print("Image exploration aboarted by user.")
-                value_setter(len(image_files))
+                if value_setter:
+                    value_setter(len(image_files))
                 return
-
-        value_setter(len(image_files))
+        if value_setter:
+            value_setter(len(image_files))
         self._base_date_range = (min_date, max_date)
+
+    def apply_date_filter(self, start_date: datetime, end_date: datetime):
+        self._filterd_date_range = (start_date, end_date)
+        for key in list(self._filtered_images.keys()):
+            if not (
+                start_date <= self._filtered_images[key].date
+                and self._filtered_images[key].date <= end_date
+            ):
+                self._filtered_images.pop(key)
 
     def store_progress(self, file_path: Path, absolute: bool = False):
 
-        vailable_dict = {
-            "base_dir": self._base_dir.as_posix(),
-            "start_date": self._base_date_range[0].isoformat(),
-            "end_date": self._base_date_range[1].isoformat(),
+        vaiable_dict = {
+            "start_date": self._filterd_date_range[0].isoformat(),
+            "end_date": self._filterd_date_range[1].isoformat(),
             "images": {},
         }
 
         for _, value in self._filtered_images.items():
             if absolute:
-                vailable_dict["images"].update(value.to_json())
+                vaiable_dict["images"].update(value.to_json())
             else:
-                vailable_dict["images"].update(value.to_json(self._base_dir))
+                vaiable_dict["images"].update(value.to_json(file_path))
 
         with open(str(file_path.with_suffix(".itsf")), "w+") as fp:
-            json.dump(vailable_dict, fp)
+            json.dump(vaiable_dict, fp)
 
     def load_configuration(self, file_path: Path):
         with open(str(file_path), "r") as fp:
             json_data = json.load(fp)
-        self._base_date_range[0] = datetime.fromisoformat(json_data["start_date"])
-        self._base_date_range[1] = datetime.fromisoformat(json_data["end_date"])
+        self._filterd_date_range = (
+            datetime.fromisoformat(json_data["start_date"]),
+            datetime.fromisoformat(json_data["end_date"]),
+        )
+
         for key, value in json_data["images"].items():
             self._filtered_images[
                 Path(key) if Path(key).is_absolute() else Path(file_path.parent, key)
             ] = SelectorImage.from_json(key, value)
-
-        self._base_dir = file_path.parent
 
     @property
     def user(self) -> Any:

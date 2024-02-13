@@ -1,7 +1,5 @@
-import shutil
-from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import List
 
 from PIL import Image
 from PIL.ImageQt import ImageQt
@@ -33,7 +31,6 @@ class ImageViewer(QMainWindow):
     def __init__(self, parent=None):
         """Create the image viewer."""
         self.available_images = {}
-        self.user_name: Optional[str] = None
         register_heif_opener()
         QMainWindow.__init__(self, parent)
         main_layout = QHBoxLayout()
@@ -70,7 +67,7 @@ class ImageViewer(QMainWindow):
         self.show()
         self.setWindowTitle("Show vacation images")
 
-        self.image_files: [Path] = []
+        self.image_files: List[Path] = []
         self.currentImage: Path = ""
         self.create_menu_bar()
         self.selector = ImageSelector()
@@ -91,16 +88,13 @@ class ImageViewer(QMainWindow):
             self.selector._base_date_range[0], self.selector._base_date_range[1], self
         )
 
-        self.filter_available_images(date_range[0], date_range[1])
+        self.selector.apply_date_filter(date_range[0], date_range[1])
+
         self.selector.store_progress(
             Path(__file__).with_name("tmp.itsf"), absolute=True
         )
-
-        self.user_name = QInputDialog.getText(
-            self, "Enter name", "Please enter your name:"
-        )
-        self.selector.user = self.user_name
-        pass
+        self.get_user_name()
+        self.set_next_image()
 
     def load_configuration(self):
 
@@ -111,15 +105,13 @@ class ImageViewer(QMainWindow):
             return
         self.selector.load_configuration(Path(config_file[0]))
 
-        self.user_name = QInputDialog.getText(
-            self, "Enter name", "Please enter your name:"
-        )
-        self.selector.user = self.user_name
+        self.get_user_name()
         self.set_next_image()
 
-    def set_next_image(self):
-        next(iter(self.selector))
-        pass
+    def get_user_name(self):
+        self.selector.user = QInputDialog.getText(
+            self, "Enter name", "Please enter your name:"
+        )[0]
 
     def save_configuration(self):
         config_file = QFileDialog.getSaveFileName(
@@ -164,15 +156,13 @@ class ImageViewer(QMainWindow):
             return
         return super().keyPressEvent(event)
 
-    def filter_available_images(self, start_date: datetime, end_date: datetime):
-        for key, value in self.available_images.items():
-            check_date = datetime.fromisoformat(value["date"])
-            if start_date <= check_date <= end_date:
-                self.available_images.pop(key)
-
-    def set_new_Image(self) -> None:
+    def set_next_image(self) -> None:
         """Set a new Image to the UI."""
-        self.currentImage = self.image_files.pop()
+        try:
+            self.currentImage = next(iter(self.selector))
+        except StopIteration:
+            self.label.setText("Out of Images")
+            return
         pil_image = Image.open(self.currentImage)
 
         factor = min(
@@ -190,17 +180,13 @@ class ImageViewer(QMainWindow):
 
     def trash_button(self) -> None:
         """Move the image to the trash folder."""
-        shutil.move(
-            self.currentImage,
-            Path(self.currentImage.parent.parent, "Trash", self.currentImage.name),
-        )
-        self.set_new_Image()
+        self.selector.set_review(self.currentImage, False)
+        self.set_next_image()
 
     def good_button(self) -> None:
         """Mark the image as checked and keep it in the same folder."""
-        new_name = self.currentImage.stem + "_checked"
-        shutil.move(self.currentImage, self.currentImage.with_stem(new_name))
-        self.set_new_Image()
+        self.selector.set_review(self.currentImage, True)
+        self.set_next_image()
 
 
 if __name__ == "__main__":
