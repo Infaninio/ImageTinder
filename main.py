@@ -88,11 +88,13 @@ class ImageViewer(QMainWindow):
             base_dir, progress.setMaximum, progress.setValue, progress.wasCanceled
         )
         date_range = CustomDateRangeDialog.get_data_range_dialog(
-            self.selector.base_date_range[0], self.selector.base_date_range[1], self
+            self.selector._base_date_range[0], self.selector._base_date_range[1], self
         )
 
         self.filter_available_images(date_range[0], date_range[1])
-        self.selector.store_progress(Path(__file__).with_name("tmp.itsf"))
+        self.selector.store_progress(
+            Path(__file__).with_name("tmp.itsf"), absolute=True
+        )
 
         self.user_name = QInputDialog.getText(
             self, "Enter name", "Please enter your name:"
@@ -113,9 +115,22 @@ class ImageViewer(QMainWindow):
             self, "Enter name", "Please enter your name:"
         )
         self.selector.user = self.user_name
+        self.set_next_image()
+
+    def set_next_image(self):
+        next(iter(self.selector))
+        pass
 
     def save_configuration(self):
-        pass
+        config_file = QFileDialog.getSaveFileName(
+            self,
+            "Choose your directory for the storage of the configuration",
+            filter="*.itsf",
+        )
+        if not config_file[0]:
+            return
+
+        self.selector.store_progress(Path(config_file[0]))
 
     def create_menu_bar(self):
         menu_bar = self.menuBar()

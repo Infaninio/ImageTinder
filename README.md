@@ -11,7 +11,7 @@ If you reject the image it will be moved to a different directory. ('Trash' Fold
 You can control the tool also with the keyboard. The letter 'A' will trash the image, the letter 'D' will check the image.
 
 # TODOs
-- Configurable trash path
 - Possibility to view videos
     - skip video frames
 - Handle out of images properly
+- Location
