@@ -19,3 +19,4 @@ You can control the tool also with the keyboard. The letter 'A' will trash the i
 - Get list of all images, based on filter/reviews.
 - Metadata for .itsf files
     - Project name
+- Get date from filename if not in metadata

@@ -161,3 +161,4 @@ cython_debug/
 
 # Storage file
 *.itsf
+*.ruff_cache

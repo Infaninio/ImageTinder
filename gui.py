@@ -21,8 +21,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from DateRangeDialog import CustomDateRangeDialog
-from image_selector import ImageSelector
+from Gui.DateRangeDialog import CustomDateRangeDialog
+from ImageSelection.image_selector import ImageSelector
 
 
 class ImageViewer(QMainWindow):
