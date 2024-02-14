@@ -16,4 +16,6 @@ You can control the tool also with the keyboard. The letter 'A' will trash the i
 - Handle out of images properly
 - Location
 - Detect newly added images even when loading config file
-- Search for .itsf files in all subdirs to detect existing configs.
+- Get list of all images, based on filter/reviews.
+- Metadata for .itsf files
+    - Project name

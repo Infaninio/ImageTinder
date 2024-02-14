@@ -66,7 +66,7 @@ class SelectorImage:
         return result
 
     @classmethod
-    def from_json(cls, file_path: str, json_content: Dict[str, Any]):
+    def from_json(cls, file_path: Union[str, Path], json_content: Dict[str, Any]):
         image = cls(Path(file_path))
         image.date = json_content["creation_date"]
         for key, value in json_content.get("reviews", {}).items():
@@ -181,9 +181,12 @@ class ImageSelector:
         )
 
         for key, value in json_data["images"].items():
-            self._filtered_images[
+            image_path = (
                 Path(key) if Path(key).is_absolute() else Path(file_path.parent, key)
-            ] = SelectorImage.from_json(key, value)
+            )
+            self._filtered_images[image_path] = SelectorImage.from_json(
+                image_path, value
+            )
 
     @property
     def user(self) -> Any:
