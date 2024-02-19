@@ -10,6 +10,13 @@ If you reject the image it will be moved to a different directory. ('Trash' Fold
 
 You can control the tool also with the keyboard. The letter 'A' will trash the image, the letter 'D' will check the image.
 
+## WebApp
+
+```shell
+flask --app WebUi run --debug # Start for live debugging/change
+```
+
+
 # TODOs
 - Possibility to view videos
     - skip video frames

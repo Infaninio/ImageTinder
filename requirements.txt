@@ -4,3 +4,4 @@ pillow-heif
 pre-commit
 pyheif
 pre-commit
+flask
