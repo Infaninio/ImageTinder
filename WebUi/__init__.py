@@ -52,4 +52,8 @@ def create_app(test_config=None) -> Flask:
 
     app.register_blueprint(configs.bp)
 
+    from . import images
+
+    app.register_blueprint(images.bp)
+
     return app

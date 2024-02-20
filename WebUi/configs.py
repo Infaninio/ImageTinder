@@ -3,7 +3,7 @@ import io
 from datetime import datetime
 
 import matplotlib.pyplot as plt
-from flask import Blueprint, render_template, request
+from flask import Blueprint, redirect, render_template, request, url_for
 
 bp = Blueprint("configs", __name__, url_prefix="/configs")
 
@@ -15,8 +15,8 @@ def overview():
         "configs/overview.html",
         configs=[
             {"name": "Amerika", "url": "/configs/Amerika"},
-            {"name": "Irland", "url": "/configs/Griechenland"},
-            {"name": "Amerika", "url": "/configs/Griechenland"},
+            {"name": "Irland", "url": "/configs/Irland"},
+            {"name": "Griechenland", "url": "/configs/Griechenland"},
         ],
     )
 
@@ -25,7 +25,8 @@ def overview():
 def show_config(config_name: str):
     """Display the overview of a specific configuration."""
     if request.method == "POST":
-        print(f"Button gedrueckt {request.form}")
+        if "review_button" in request.form:
+            return redirect(url_for("images.image", image_name="nice_image"))
 
     example_config = {
         "name": config_name,
