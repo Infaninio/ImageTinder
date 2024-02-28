@@ -16,6 +16,12 @@ You can control the tool also with the keyboard. The letter 'A' will trash the i
 flask --app WebUi run --debug # Start for live debugging/change
 ```
 
+Initialize the db with
+```shell
+flask --app WebUI init-db
+```
+
+
 
 # TODOs
 - Possibility to view videos
@@ -27,3 +33,5 @@ flask --app WebUi run --debug # Start for live debugging/change
 - Metadata for .itsf files
     - Project name
 - Get date from filename if not in metadata
+- User fingerprint to find duplicates e.g. Histogram, reduce to 5x5....
+- Gesichtserkennung.

@@ -40,19 +40,19 @@ def create_app(test_config=None) -> Flask:
     def index():
         return render_template("welcome.html")
 
-    from . import db
+    import db
 
     db.init_app(app)
 
-    from . import auth
+    import auth
 
     app.register_blueprint(auth.bp)
 
-    from . import configs
+    import configs
 
     app.register_blueprint(configs.bp)
 
-    from . import images
+    import images
 
     app.register_blueprint(images.bp)
 

@@ -1,5 +1,6 @@
 import functools
 
+from db import get_db
 from flask import (
     Blueprint,
     flash,
@@ -11,8 +12,6 @@ from flask import (
     url_for,
 )
 from werkzeug.security import check_password_hash, generate_password_hash
-
-from WebUi.db import get_db
 
 bp = Blueprint("auth", __name__, url_prefix="/auth")
 
